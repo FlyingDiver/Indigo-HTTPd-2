@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<PluginConfig>
+	<SupportURL>http://forums.indigodomo.com/viewforum.php?f=216</SupportURL>
+	<Field id="ddnsName" type="textfield"  defaultValue="">
+		<Label>DDNS Name:</Label>
+	</Field>
+    <Field id="ddnsNameNote" type="label" fontSize="small" fontColor="darkgray">
+        <Label>Optional.  Enter the DDNS name for your router/LAN. This will be used to construct Webhook URLs for plugins/scripts using the HTTPd plugin.</Label>
+    </Field>    
+    <Field id="sep3" type="separator"/>
+    <Field id="logLevel" type="menu" defaultValue="20">
+        <Label>Event Logging Level:</Label>
+        <List>
+            <Option value="10">Debugging Messages</Option>
+            <Option value="20">Informational Messages</Option>
+            <Option value="30">Warning Messages</Option>
+            <Option value="40">Error Messages</Option>
+            <Option value="50">Critical Errors Only</Option>
+        </List>
+    </Field>       
+</PluginConfig>
