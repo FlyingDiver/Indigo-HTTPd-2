@@ -3,7 +3,8 @@
 	<Device type="custom" id="serverDevice">
 		<Name>HTTP/HTTPS Server</Name>
         <ConfigUI>
-        	<Field id="protocol" type="menu" defaultValue="http">
+            <Field id="saved_states" type="textfield" hidden="true" defaultValue="{}"/>
+       	    <Field id="protocol" type="menu" defaultValue="http">
         		<Label>Protocol:</Label>
         		<List>
         			<Option value="http">HTTP</Option>

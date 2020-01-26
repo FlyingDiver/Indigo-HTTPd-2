@@ -121,19 +121,21 @@ class MyRequestHandler(BaseHTTPRequestHandler):
         device = indigo.devices[self.server.devID]
         self.logger.debug(u"MyRequestHandler: updating device {} (port {})".format(device.name, device.address))
 
-        old_states =  device.pluginProps.get("states_list", indigo.List())
-        new_states = indigo.List()                
+        saved_states =  json.loads(device.pluginProps.get("saved_states", "{}"))
+        self.logger.debug(u"MyRequestHandler: saved_states = {} ({})".format(saved_states, type(saved_states)))
+        
+        new_states = {}               
         state_list = []
         for key in query:
             value = query[key][0]
             self.logger.debug(u"MyRequestHandler: setting state {} to '{}'".format(key, value))
-            new_states.append(key)
             state_list.append({'key': unicode(key), 'value': value})
+            new_states[key] = value
+        self.logger.debug(u"MyRequestHandler: new_states = {} ({})".format(new_states, type(new_states)))
 
-        if old_states != new_states:
-            self.logger.threaddebug(u"{}: update, new_states: {}".format(device.name, new_states))
+        if saved_states != new_states:
             newProps = device.pluginProps
-            newProps["states_list"] = new_states
+            newProps["saved_states"] = json.dumps(new_states)
             device.replacePluginPropsOnServer(newProps)
             device.stateListOrDisplayStateIdChanged()    
 
@@ -373,11 +375,11 @@ class Plugin(indigo.PluginBase):
                 server.set_dev_id(dev.id)
                 self.servers[dev.id] =  server
   
-            states_list =  dev.pluginProps.get("states_list", indigo.List())
-            stateList = []
-            for key in states_list:
-                stateList.append({'key': key, 'value': ''})
-            dev.updateStatesOnServer(stateList)
+            saved_states =  json.loads(dev.pluginProps.get("saved_states", "{}"))
+            state_list = []
+            for key in saved_states:
+                state_list.append({'key': key, 'value': saved_states[key]})
+            dev.updateStatesOnServer(state_list)
           
         elif dev.deviceTypeId == 'proxyDevice':
 
@@ -428,22 +430,14 @@ class Plugin(indigo.PluginBase):
     #
     ########################################
 
-    def getStateList(self, filter, valuesDict, typeId, deviceId):
-        self.logger.threaddebug(u"{}: getStateList, valuesDict = {}".format(device.name, valuesDict))
-        returnList = list()
-        if 'states_list' in valuesDict:
-            for topic in valuesDict['states_list']:
-                returnList.append(topic)
-        return returnList
-
     def getDeviceStateList(self, device):
         state_list = indigo.PluginBase.getDeviceStateList(self, device)
         self.logger.threaddebug(u"{}: getDeviceStateList, base state_list = {}".format(device.name, state_list))
         if device.deviceTypeId != "serverDevice":
             return state_list
             
-        add_states =  device.pluginProps.get("states_list", indigo.List())
-        for key in add_states:
+        saved_states = json.loads(device.pluginProps.get("saved_states", "{}"))
+        for key in saved_states:
             dynamic_state = self.getDeviceStateDictForStringType(unicode(key), unicode(key), unicode(key))
             state_list.append(dynamic_state)
         
