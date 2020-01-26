@@ -2,9 +2,11 @@
 
 Plugin for the Indigo Home Automation system.
 
-Runs an HTTP server inside Indigo.
+Runs one or more HTTP server(s) inside Indigo.
 
-Configure port number, username, and password in the plugin configuration dialog.  You'll need to set up port forwarding on your router to the specified port.  Only ports > 1024 can be used.
+Create an HTTP Server device for each port you want served.  Each service instance (Indigo device) has it's own port, username/password, etc.  If you want to enable SSL for a port, see the Wiki for instructions.
+
+You'll need to set up port forwarding on your router to the specified port.  Only ports > 1024 can be used.
 
 Example URL to activate the plugin:
 
@@ -12,7 +14,7 @@ Example URL to activate the plugin:
     
 The first "action" the plugin supports is "/setvar". This will set the specified variables to the values given. For protection, the variables have "httpd_" prepended to the names provided. In this case, the Indigo variable "httpd_foo" would be set to "bar", and the Indigo variable "httpd_zig" would be set to "zag". If they don't exist, the variables are created in an "HTTPd" variable folder. "/setvar" is available with either GET or POST http methods.
 
-The next action is "/webhook" which is available using http POST only. The syntax is similar:
+The next action is "/webhook". The syntax is similar:
 
     http://username:password@my.domain.org:5566/webhook?name=test
 
@@ -35,18 +37,4 @@ and the contents of broadcastDict would be:
 }
 
 For more details on the URL path and payload options see the Wiki.
- 
-The last action is "/broadcast" which is available using http POST only.  The syntax is the same:
-
-    http://username:password@my.domain.org:5566/broadcast?name=test
-
-And the broadcastToSubscribers call looks like:
-
-    indigo.server.broadcastToSubscribers(u"httpd_post_broadcast", broadcastDict)
-
-and the contents of broadcastDict would be:
-
-	{'name': 'test', 'payload': '<the POST payload>}
-
-Multiple name/value pairs can be specified in the URL, similar to '/setvar'.  The "/broadcast" action has been superceded by the "/webhook" action, and is only maintained for backward compatability.
 
