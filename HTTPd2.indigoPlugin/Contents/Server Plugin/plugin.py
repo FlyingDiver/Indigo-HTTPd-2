@@ -475,6 +475,27 @@ class Plugin(indigo.PluginBase):
         pass
 
 
+    def resetDeviceStatesAction(self, pluginAction):
+        deviceId = int(pluginAction.props["targetDevice"])
+        self.resetDeviceStates(indigo.devices[deviceId])
+        
+    def resetDeviceStatesMenu(self, valuesDict, typeId):
+        try:
+            deviceId = int(valuesDict["targetDevice"])
+        except:
+            self.logger.error(u"Bad Device specified for Reset Device operation")
+            return False
+
+        self.resetDeviceStates(indigo.devices[deviceId])
+        return True
+      
+    def resetDeviceStates(self, device):
+        newProps = device.pluginProps
+        newProps["saved_states"] = "{}"
+        device.replacePluginPropsOnServer(newProps)
+        device.stateListOrDisplayStateIdChanged()    
+    
+    
     ########################################
     # Actions
     ########################################

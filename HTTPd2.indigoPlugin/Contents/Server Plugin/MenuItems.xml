@@ -6,4 +6,15 @@
 	 back to the user you can post information into the Event Log.
 -->
 <MenuItems>
+    <MenuItem id="menu1">
+        <Name>Reset Device States</Name>
+        <CallbackMethod>resetDeviceStatesMenu</CallbackMethod>
+        <ButtonTitle>Reset States</ButtonTitle>
+        <ConfigUI>
+            <Field id="targetDevice" type="menu">
+                <Label>Select device to reset:</Label>
+                <List class="indigo.devices" filter="self.serverDevice"/>
+            </Field>
+        </ConfigUI>
+    </MenuItem>
 </MenuItems>

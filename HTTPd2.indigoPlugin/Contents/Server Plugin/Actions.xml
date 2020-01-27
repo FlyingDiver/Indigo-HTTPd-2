@@ -1,6 +1,16 @@
 <?xml version="1.0"?>
 <Actions>
 	<SupportURL>http://forums.indigodomo.com/viewforum.php?f=216</SupportURL>
+    <Action id="resetDeviceStates">
+        <Name>Reset Device States</Name>
+        <CallbackMethod>resetDeviceStatesAction</CallbackMethod>
+        <ConfigUI>
+            <Field id="targetDevice" type="menu">
+                <Label>Select device to reset:</Label>
+                <List class="indigo.devices" filter="self.serverDevice"/>
+            </Field>        </ConfigUI>
+    </Action>
+
     <Action id="getWebhookInfo" uiPath="hidden">
         <Name>Get Webhook Info</Name>
         <CallbackMethod>getWebhookInfoAction</CallbackMethod>

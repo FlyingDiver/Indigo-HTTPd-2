@@ -37,13 +37,7 @@
             </Field>    
         </ConfigUI>
 		<States>
-            <State id="status">
-                <ValueType>String</ValueType>
-                <TriggerLabel>UI Status</TriggerLabel>
-                <ControlPageLabel>UI Status</ControlPageLabel>
-            </State>        
         </States>
-        <UiDisplayStateId>status</UiDisplayStateId>
 	</Device>
 
 	<Device type="custom" id="proxyDevice">
