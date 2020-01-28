@@ -413,7 +413,7 @@ class Plugin(indigo.PluginBase):
     def didDeviceCommPropertyChange(self, oldDevice, newDevice):
         if newDevice.deviceTypeId == 'serverDevice':
             for prop in newDevice.pluginProps:
-                if prop in ['states_list']:          # list of properties to ignore
+                if prop in ['saved_states']:          # list of properties to ignore
                     pass
                 elif newDevice.pluginProps[prop] != oldDevice.pluginProps[prop]:
                     self.logger.threaddebug(u"{}: didDeviceCommPropertyChange prop {}: {}->{}".format(newDevice.name, prop, oldDevice.pluginProps[prop], newDevice.pluginProps[prop]))
