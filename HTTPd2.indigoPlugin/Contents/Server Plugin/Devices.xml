@@ -43,18 +43,26 @@
 	<Device type="custom" id="proxyDevice">
 		<Name>Webhook Proxy</Name>
         <ConfigUI>
-            <Field id="dummy" type="checkbox" defaultValue="true" hidden="true" />
+            <Field id="serverDevice" type="menu">
+                <Label>HTTP(s) Server:</Label>
+                <List class="indigo.devices" filter="self.serverDevice"/>
+            </Field>        
         </ConfigUI>
 		<States>
-			<State id="http">
+			<State id="hook_name">
 				<ValueType>String</ValueType>
-                <TriggerLabel>http URL</TriggerLabel>
-                <ControlPageLabel>http URL</ControlPageLabel>
+                <TriggerLabel>Hook Name</TriggerLabel>
+                <ControlPageLabel>Hook Name</ControlPageLabel>
 			</State>
-			<State id="https">
+			<State id="hook_url">
 				<ValueType>String</ValueType>
-                <TriggerLabel>https URL</TriggerLabel>
-                <ControlPageLabel>https URL</ControlPageLabel>
+                <TriggerLabel>Hook URL</TriggerLabel>
+                <ControlPageLabel>Hook URL</ControlPageLabel>
+			</State>
+			<State id="hookdata_json">
+				<ValueType>String</ValueType>
+                <TriggerLabel>HookData as JSON</TriggerLabel>
+                <ControlPageLabel>HookData as JSON</ControlPageLabel>
 			</State>
 		</States>
 	</Device>

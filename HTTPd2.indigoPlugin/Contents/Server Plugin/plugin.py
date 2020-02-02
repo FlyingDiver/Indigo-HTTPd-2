@@ -115,23 +115,22 @@ class MyRequestHandler(BaseHTTPRequestHandler):
             self.logger.debug(u"MyRequestHandler: {} Authorization invalid".format(auth_scheme).capitalize())
             return False
 
-    def do_setvar(self, request):      
-        query = parse_qs(request.query)
-                    
+    def do_setvar(self, request):                          
         device = indigo.devices[self.server.devID]
-        self.logger.debug(u"MyRequestHandler: updating device {} (port {})".format(device.name, device.address))
+        self.logger.debug(u"{}: MyRequestHandler: updating device".format(device.name))
 
         saved_states =  json.loads(device.pluginProps.get("saved_states", "{}"))
-        self.logger.debug(u"MyRequestHandler: saved_states = {} ({})".format(saved_states, type(saved_states)))
+        self.logger.threaddebug(u"{}: MyRequestHandler: saved_states = {}".format(device.name, saved_states))
         
         new_states = {}               
         state_list = []
+
+        query = parse_qs(request.query)
         for key in query:
             value = query[key][0]
-            self.logger.debug(u"MyRequestHandler: setting state {} to '{}'".format(key, value))
             state_list.append({'key': unicode(key), 'value': value})
             new_states[key] = value
-        self.logger.debug(u"MyRequestHandler: new_states = {} ({})".format(new_states, type(new_states)))
+        self.logger.threaddebug(u"{}: MyRequestHandler: new_states = {}".format(device.name, new_states))
 
         if saved_states != new_states:
             newProps = device.pluginProps
@@ -143,24 +142,47 @@ class MyRequestHandler(BaseHTTPRequestHandler):
         device.updateStatesOnServer(state_list)
 
     def do_webhook(self, request):      
+        self.logger.debug("do_webhook query = {}, path = {}".format(request.query, request.path))
+
         broadcastDict = {}
         varsDict = {}
         headers = {}
-        query = parse_qs(request.query)
-        for key in query:
-            varsDict[key] = query[key][0]
-        broadcastDict["vars"] = varsDict
-
-        headers = {key:value for (key,value) in self.headers.items()}
-        broadcastDict["headers"] = headers
+        reqDict = {}
+        
+        try:
+            query = parse_qs(request.query)
+            for key in query:
+                varsDict[key] = query[key][0]
+            broadcastDict["vars"] = varsDict
+        except:
+            broadcastDict["vars"] = None
+        
+        try:
+            headers = {key:value for (key,value) in self.headers.items()}
+            broadcastDict["headers"] = headers
+        except:
+            broadcastDict["headers"] = None
+            
+            
+        try:
+            client_host, client_port = self.client_address
+            reqDict= {"path" : request.path, "command" : self.command, "client" : client_host}
+            broadcastDict["request"]  = reqDict
+        except:
+            broadcastDict["request"]  = None
 
         if self.command == "POST":
-            data = self.rfile.read(int(self.headers['Content-length']))
-            broadcastDict["payload"] = data
+            try:
+                data = self.rfile.read(int(self.headers['Content-length']))
+                broadcastDict["payload"] = data
+            except:
+                broadcastDict["payload"] = None
+        else:
+            broadcastDict["payload"] = None
                     
         broadcast = u"httpd_" + request.path[1:]
-        self.logger.debug("Webhook to {} = {}".format(broadcast, broadcastDict, indent=4, sort_keys=True))
-        indigo.server.broadcastToSubscribers(broadcast, broadcastDict)
+        self.logger.debug("Webhook to {} = {}".format(broadcast, json.dumps(broadcastDict)))
+        indigo.server.broadcastToSubscribers(broadcast, json.dumps(broadcastDict))
         
 
     def do_POST(self):
@@ -334,6 +356,7 @@ class Plugin(indigo.PluginBase):
             
     ########################################
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
+        self.logger.debug("validateDeviceConfigUi typeId = {}, devId = {}, valuesDict = {}".format(typeId, devId, valuesDict))
         errorsDict = indigo.Dict()
 
         if typeId == 'serverDevice':
@@ -350,6 +373,10 @@ class Plugin(indigo.PluginBase):
                 if not os.path.isfile(certfile):
                     errorsDict['certfileName'] = u"Certificate file required for HTTPS protocol"
 
+        elif typeId == 'proxyDevice':
+            if not valuesDict.get('serverDevice', None):
+                errorsDict['serverDevice'] = u"Server Device required"
+            
         self.logger.debug("validateDeviceConfigUi done - {} errors".format(len(errorsDict)))
         
         if len(errorsDict) > 0:
@@ -382,11 +409,15 @@ class Plugin(indigo.PluginBase):
             dev.updateStatesOnServer(state_list)
           
         elif dev.deviceTypeId == 'proxyDevice':
-
-            webhook_info = self.getWebhookInfo(str(dev.id))
+            serverID = dev.pluginProps.get('serverDevice', None)
+            if not serverID:
+                self.logger.warning(u"{}: No Server Device specified".format(dev.name))
+            
+            webhook_info = self.getWebhookInfo(str(dev.id), serverID)
+            self.logger.debug(u"{}: deviceStartComm, webhook_info = {}".format(dev.name, webhook_info))
             stateList = [
-                            {'key': 'http',      'value': webhook_info.get("http",None)},
-                            {'key': 'https',     'value': webhook_info.get("https",None)} 
+                            {'key': 'hook_url',  'value': webhook_info.get("hook_url", None)},
+                            {'key': 'hook_name', 'value': webhook_info.get("hook_name", None)}
                         ]
             dev.updateStatesOnServer(stateList)
 
@@ -406,8 +437,10 @@ class Plugin(indigo.PluginBase):
             assassin.start()            
             
         elif dev.deviceTypeId == 'proxyDevice':
+            serverID = dev.pluginProps.get('serverDevice', None)
 
-            webhook_info = self.getWebhookInfo(str(dev.id))
+            webhook_info = self.getWebhookInfo(str(dev.id), serverID)
+            self.logger.debug(u"{}: deviceStartComm, webhook_info = {}".format(dev.name, webhook_info))
             indigo.server.subscribeToBroadcast("com.flyingdiver.indigoplugin.httpd2", webhook_info["hook_name"], "CallbackNOP")
            
     def didDeviceCommPropertyChange(self, oldDevice, newDevice):
@@ -459,11 +492,14 @@ class Plugin(indigo.PluginBase):
         return state_list
 
 
-    def webhook_proxy(self, hook_data):
+    def webhook_proxy(self, hookdata_json):
 
+        hook_data = json.loads(hookdata_json)
+        
         proxy_dev = indigo.devices[int(hook_data["request"]["path"][9:])]
-        self.logger.debug(u"webhook_proxy saving hook data for {} ({})".format(proxy_dev.name, proxy_dev.id))
         self.proxy_data[proxy_dev.id] = hook_data
+        
+        proxy_dev.updateStateOnServer(key='hookdata_json', value=hookdata_json)
 
         for triggerId, trigger in sorted(self.triggers.iteritems()):
             self.logger.debug("Checking Trigger {} ({})".format(trigger.name, trigger.id))
@@ -511,33 +547,44 @@ class Plugin(indigo.PluginBase):
 
     def getWebhookInfoAction(self, pluginAction, device, callerWaitingForResult = True):
 
-        return self.getWebhookInfo(pluginAction.props.get(u"name", None))
+        return self.getWebhookInfo(pluginAction.props.get(u"callerName", None), pluginAction.props.get("brokerDevice", None))
         
 
-    def getWebhookInfo(self, callerName):
+    def getWebhookInfo(self, callerName, brokerID):
 
-        if not callerName:
-            self.logger.debug(u"getWebhookInfo failed, caller name not provided")
+        if not callerName or not brokerID:
+            self.logger.warning(u"getWebhookInfo failed, caller name or broker ID not provided")
             return None
-            
+
         info = {u"hook_name" : u"httpd_webhook-" + callerName}
+        
+        brokerDev = indigo.devices.get(int(brokerID), None)
+        if not brokerDev:
+            self.logger.warning(u"getWebhookInfo failed, invalid Broker ID")
+            return None
+     
         
         ddnsName = self.pluginPrefs.get('ddnsName', None)
         if not ddnsName:
+            self.logger.warning(u"getWebhookInfo failed, invalid ddnsName")
             return None
         
-        if len(self.pluginPrefs.get('httpPassword', None)) != 0:
-            auth = "{}:{}@".format(self.pluginPrefs.get('httpUser', ''), self.pluginPrefs.get('httpPassword', ''))
+        if len(brokerDev.pluginProps.get('httpPassword', None)) != 0:
+            auth = "{}:{}@".format(brokerDev.pluginProps.get('httpUser', ''), brokerDev.pluginProps.get('httpPassword', ''))
         else:
             auth = ''
                     
-        port = int(self.pluginPrefs.get('httpPort', 0))
-        if port:
-            info[u"http"] = "http://{}{}:{}/webhook-{}".format(auth, ddnsName, port, callerName)
-            
-        port = int(self.pluginPrefs.get('httpsPort', 0))
-        if port:
-            info[u"https"] = "https://{}{}:{}/webhook-{}".format(auth, ddnsName, port, callerName)
+        port = int(brokerDev.pluginProps.get('address', 0))
+        if not port:
+            self.logger.warning(u"getWebhookInfo failed, invalid port number")
+            return None
+        
+        protocol = brokerDev.pluginProps.get('protocol', None)
+        if not protocol:
+            self.logger.warning(u"getWebhookInfo failed, invalid protocol")
+            return None
+        
+        info[u"hook_url"] = "{}://{}{}:{}/webhook-{}".format(protocol, auth, ddnsName, port, callerName)
 
         self.logger.debug(u"getWebhookInfo, info = {}".format(info))
 

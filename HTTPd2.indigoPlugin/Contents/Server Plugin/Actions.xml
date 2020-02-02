@@ -8,15 +8,23 @@
             <Field id="targetDevice" type="menu">
                 <Label>Select device to reset:</Label>
                 <List class="indigo.devices" filter="self.serverDevice"/>
-            </Field>        </ConfigUI>
+            </Field>        
+        </ConfigUI>
     </Action>
 
     <Action id="getWebhookInfo" uiPath="hidden">
         <Name>Get Webhook Info</Name>
         <CallbackMethod>getWebhookInfoAction</CallbackMethod>
+		<ConfigUI>
+        	<Field id="callerName"   type="textfield"/>
+        	<Field id="brokerDevice" type="textfield"/>
+		</ConfigUI>
     </Action>
     <Action id="getWebhookData" uiPath="hidden">
         <Name>Get Webhook Data</Name>
         <CallbackMethod>getWebhookDataAction</CallbackMethod>
+		<ConfigUI>
+        	<Field id="proxyDevice"   type="textfield"/>
+		</ConfigUI>
     </Action>
 </Actions>
