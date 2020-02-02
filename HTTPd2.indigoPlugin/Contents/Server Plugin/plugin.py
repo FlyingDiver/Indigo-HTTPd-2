@@ -371,6 +371,7 @@ class Plugin(indigo.PluginBase):
             if valuesDict.get('protocol', 'http') == 'https':
                 certfile = indigo.server.getInstallFolderPath() + '/' + valuesDict.get('certfileName', "")
                 if not os.path.isfile(certfile):
+                    self.logger.debug("validateDeviceConfigUi certfile not found: {}".format(certfile))
                     errorsDict['certfileName'] = u"Certificate file required for HTTPS protocol"
 
         elif typeId == 'proxyDevice':
@@ -452,10 +453,12 @@ class Plugin(indigo.PluginBase):
                     self.logger.threaddebug(u"{}: didDeviceCommPropertyChange prop {}: {}->{}".format(newDevice.name, prop, oldDevice.pluginProps[prop], newDevice.pluginProps[prop]))
                     return True
             self.logger.threaddebug(u"{}: didDeviceCommPropertyChange no changes".format(newDevice.name))
-            return False 
             
         elif newDevice.deviceTypeId == 'proxyDevice':
-            return False
+            if newDevice.pluginProps["serverDevice"] != oldDevice.pluginProps["serverDevice"]:
+                return True
+                
+        return False
         
     ########################################
     #
