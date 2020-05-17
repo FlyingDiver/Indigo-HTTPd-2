@@ -23,6 +23,9 @@
             <Field id="digestRequired" type="checkbox" defaultValue="false">
                 <Label>Require Digest Authentication:</Label>
             </Field>            
+            <Field id="updateTimestamp" type="checkbox" defaultValue="false">
+                <Label>Update a timestamp state:</Label>
+            </Field>            
             <Field id="certfileName" type="textfield"  defaultValue="">
                 <Label>Certificate File:</Label>
             </Field>

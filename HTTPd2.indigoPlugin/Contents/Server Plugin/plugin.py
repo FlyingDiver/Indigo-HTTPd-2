@@ -130,15 +130,19 @@ class MyRequestHandler(BaseHTTPRequestHandler):
             value = query[key][0]
             state_list.append({'key': unicode(key), 'value': value})
             new_states[key] = value
+ 
+        if device.pluginProps.get("updateTimestamp", False):
+            state_list.append({'key': u'http2_timestamp', 'value': time.strftime("%x %X")})
+ 
         self.logger.threaddebug(u"{}: MyRequestHandler: new_states = {}".format(device.name, new_states))
 
         if saved_states != new_states:
             newProps = device.pluginProps
             newProps["saved_states"] = json.dumps(new_states)
             device.replacePluginPropsOnServer(newProps)
-            device.stateListOrDisplayStateIdChanged()    
 
         self.server.set_state_list(state_list)
+        device.stateListOrDisplayStateIdChanged()    
         device.updateStatesOnServer(state_list)
 
     def do_webhook(self, request):      
@@ -449,8 +453,8 @@ class Plugin(indigo.PluginBase):
             for prop in newDevice.pluginProps:
                 if prop in ['saved_states']:          # list of properties to ignore
                     pass
-                elif newDevice.pluginProps[prop] != oldDevice.pluginProps[prop]:
-                    self.logger.threaddebug(u"{}: didDeviceCommPropertyChange prop {}: {}->{}".format(newDevice.name, prop, oldDevice.pluginProps[prop], newDevice.pluginProps[prop]))
+                elif newDevice.pluginProps.get(prop, None) != oldDevice.pluginProps.get(prop, None):
+                    self.logger.threaddebug(u"{}: didDeviceCommPropertyChange prop {}: {}->{}".format(newDevice.name, prop, oldDevice.pluginProps.get(prop, None), newDevice.pluginProps.get(prop, None)))
                     return True
             self.logger.threaddebug(u"{}: didDeviceCommPropertyChange no changes".format(newDevice.name))
             
