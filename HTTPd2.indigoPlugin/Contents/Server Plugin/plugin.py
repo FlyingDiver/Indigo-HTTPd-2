@@ -554,20 +554,20 @@ class Plugin(indigo.PluginBase):
 
     def getWebhookInfoAction(self, pluginAction, device, callerWaitingForResult = True):
 
-        return self.getWebhookInfo(pluginAction.props.get(u"callerName", None), pluginAction.props.get("brokerDevice", None))
+        return self.getWebhookInfo(pluginAction.props.get(u"name", None), pluginAction.props.get("server", None))
         
 
-    def getWebhookInfo(self, callerName, brokerID):
+    def getWebhookInfo(self, callerName, serverID):
 
-        if not callerName or not brokerID:
-            self.logger.warning(u"getWebhookInfo failed, caller name or broker ID not provided")
+        if not callerName or not serverID:
+            self.logger.warning(u"getWebhookInfo failed, caller name or server deviceID not provided")
             return None
 
         info = {u"hook_name" : u"httpd_webhook-" + callerName}
         
-        brokerDev = indigo.devices.get(int(brokerID), None)
-        if not brokerDev:
-            self.logger.warning(u"getWebhookInfo failed, invalid Broker ID")
+        serverDev = indigo.devices.get(int(serverID), None)
+        if not serverDev:
+            self.logger.warning(u"getWebhookInfo failed, invalid Server DeviceID")
             return None
      
         
@@ -576,17 +576,17 @@ class Plugin(indigo.PluginBase):
             self.logger.warning(u"getWebhookInfo failed, invalid ddnsName")
             return None
         
-        if len(brokerDev.pluginProps.get('httpPassword', None)) != 0:
-            auth = "{}:{}@".format(brokerDev.pluginProps.get('httpUser', ''), brokerDev.pluginProps.get('httpPassword', ''))
+        if len(serverDev.pluginProps.get('httpPassword', None)) != 0:
+            auth = "{}:{}@".format(serverDev.pluginProps.get('httpUser', ''), serverDev.pluginProps.get('httpPassword', ''))
         else:
             auth = ''
                     
-        port = int(brokerDev.pluginProps.get('address', 0))
+        port = int(serverDev.pluginProps.get('address', 0))
         if not port:
             self.logger.warning(u"getWebhookInfo failed, invalid port number")
             return None
         
-        protocol = brokerDev.pluginProps.get('protocol', None)
+        protocol = serverDev.pluginProps.get('protocol', None)
         if not protocol:
             self.logger.warning(u"getWebhookInfo failed, invalid protocol")
             return None
