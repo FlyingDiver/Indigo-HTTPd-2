@@ -203,7 +203,7 @@ class MyRequestHandler(BaseHTTPRequestHandler):
         if request.path == "/setvar":
             self.do_setvar(request)
         
-        elif request.path.startswith("/webhook"):
+        elif "webhook" in request.path:
             self.do_webhook(request)
         
         else:
@@ -228,7 +228,7 @@ class MyRequestHandler(BaseHTTPRequestHandler):
         if request.path == "/setvar":
             self.do_setvar(request)
 
-        elif request.path.startswith("/webhook"):
+        elif "webhook" in request.path:
             self.do_webhook(request)
                 
         else:
