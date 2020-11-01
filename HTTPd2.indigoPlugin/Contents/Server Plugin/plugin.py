@@ -10,6 +10,7 @@ import os.path
 import hashlib
 import time
 import threading
+import requests
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from urlparse import urlparse, parse_qs
@@ -263,6 +264,12 @@ class Plugin(indigo.PluginBase):
         self.triggers = {}
         self.proxy_data = {}
 
+        self.threadLock = threading.Lock()  # for background connection test
+
+        self.testInterval = float(self.pluginPrefs.get('updateFrequency', "10"))  * 60   # test interval in minutes
+        self.logger.debug(u"testInterval = {}".format(self.testInterval))
+        self.next_test = time.time()
+
 
     def shutdown(self):
         indigo.server.log(u"Shutting down HTTPd")
@@ -303,7 +310,7 @@ class Plugin(indigo.PluginBase):
             else:
                 keyfile = indigo.server.getInstallFolderPath() + '/' + keyfileName
                 if not os.path.isfile(keyfile):
-                    self.logger.error(u"Key file missing, unable to start HTTPS server on port {}".format(port))
+                    self.logger.error(u"Key file not found, unable to start HTTPS server on port {}".format(port))
                     return None
             
             server.socket = ssl.wrap_socket(server.socket, keyfile=keyfile, certfile=certfile, server_side=True)
@@ -322,11 +329,46 @@ class Plugin(indigo.PluginBase):
                     except:
                         pass
                         
+
+                if (time.time() > self.next_test):
+                    self.next_test = time.time() + self.testInterval
+                    self.logger.debug(u"Starting Connection test thread...")
+                    testThread = threading.Thread(target = self.testConnections, args = ())
+                    testThread.start()           
+                                                     
                 self.sleep(0.1)
 
         except self.StopThread:
             pass
 
+    def testConnections(self):
+
+        if not self.threadLock.acquire(False):
+            self.logger.warning(u"Unable to test connections, process already running.")
+            return
+
+        self.logger.info("Commencing Connection Testing")
+
+        for serverDevID in self.servers:
+            serverDev = indigo.devices[serverDevID]
+            
+            url = "{}://127.0.0.1:{}/".format(serverDev.pluginProps.get('protocol', 'http'), serverDev.address)
+            
+            self.logger.debug("{}: connection test = {}".format(serverDev.name, url))
+            try:
+                r = requests.get(url, timeout=1.0, verify=False)
+            except Exception as err:
+                self.logger.error("{}: connection test error = {}".format(serverDev.name, err))
+                self.logger.debug("{}: connection test restarting device".format(serverDev.name))
+                self.deviceStopComm(indigo.devices[serverDevID])
+                self.sleep(2)
+                self.deviceStartComm(indigo.devices[serverDevID])
+                        
+            else:
+                self.logger.debug("{}: connection test status = {}".format(serverDev.name, r.status_code))
+
+        self.logger.info("Connection Testing Complete")
+            
 
     ####################
 
