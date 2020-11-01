@@ -258,7 +258,7 @@ class Plugin(indigo.PluginBase):
 
 
     def startup(self):
-        indigo.server.log(u"Starting HTTPd")
+        indigo.server.log(u"Starting HTTPd 2")
 
         self.servers = {}
         self.triggers = {}
@@ -272,7 +272,7 @@ class Plugin(indigo.PluginBase):
 
 
     def shutdown(self):
-        indigo.server.log(u"Shutting down HTTPd")
+        indigo.server.log(u"Shutting down HTTPd 2")
 
 
     def start_server(self, port, https=False, certfileName=None, keyfileName=None):
@@ -368,6 +368,7 @@ class Plugin(indigo.PluginBase):
                 self.logger.debug("{}: connection test status = {}".format(serverDev.name, r.status_code))
 
         self.logger.info("Connection Testing Complete")
+        self.threadLock.release()
             
 
     ####################
