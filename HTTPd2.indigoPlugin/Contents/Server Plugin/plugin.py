@@ -266,8 +266,8 @@ class Plugin(indigo.PluginBase):
 
         self.threadLock = threading.Lock()  # for background connection test
 
-        self.testInterval = float(self.pluginPrefs.get('updateFrequency', "10"))  * 60   # test interval in minutes
-        self.logger.debug(u"testInterval = {}".format(self.testInterval))
+        self.keepAlive = float(self.pluginPrefs.get('keepAlive', "60"))  * 60   # test interval in minutes
+        self.logger.debug(u"keepAlive = {}".format(self.keepAlive))
         self.next_test = time.time()
 
 
@@ -327,12 +327,12 @@ class Plugin(indigo.PluginBase):
                     try:
                         server.handle_request()
                     except:
-                        pass
+                        pass 
                         
 
                 if (time.time() > self.next_test):
-                    self.next_test = time.time() + self.testInterval
-                    self.logger.debug(u"Starting Connection test thread...")
+                    self.next_test = time.time() + self.keepAlive
+                    self.logger.debug(u"Starting Connection Keep Alive thread...")
                     testThread = threading.Thread(target = self.testConnections, args = ())
                     testThread.start()           
                                                      
@@ -344,10 +344,10 @@ class Plugin(indigo.PluginBase):
     def testConnections(self):
 
         if not self.threadLock.acquire(False):
-            self.logger.warning(u"Unable to test connections, process already running.")
+            self.logger.warning(u"Keep Alive: Unable to test connections, process already running.")
             return
 
-        self.logger.info("Commencing Connection Testing")
+        self.logger.debug("Keep Alive: Connection Testing Started")
 
         for serverDevID in self.servers:
             serverDev = indigo.devices[serverDevID]
@@ -367,7 +367,7 @@ class Plugin(indigo.PluginBase):
             else:
                 self.logger.debug("{}: connection test status = {}".format(serverDev.name, r.status_code))
 
-        self.logger.info("Connection Testing Complete")
+        self.logger.debug("Keep Alive: Connection Testing Complete")
         self.threadLock.release()
             
 
@@ -400,6 +400,14 @@ class Plugin(indigo.PluginBase):
                 self.logLevel = logging.INFO
             self.indigo_log_handler.setLevel(self.logLevel)
             self.logger.debug(u"logLevel = {}".format(self.logLevel))
+
+            try:
+                self.keepAlive = float(valuesDict[u"keepAlive"])
+                if self.keepAlive < 10.0: 
+                    self.keepAlive = 10.0
+            except:
+                self.keepAlive = 60.0
+
             
     ########################################
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):

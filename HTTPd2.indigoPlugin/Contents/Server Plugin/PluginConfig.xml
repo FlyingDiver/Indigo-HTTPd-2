@@ -19,4 +19,10 @@
             <Option value="50">Critical Errors Only</Option>
         </List>
     </Field>       
+    <Field id="keepAlive" type="textfield" defaultValue="60">
+        <Label>Keep Alive HTTP server test interval (minutes):</Label>
+    </Field>
+    <Field id="statusNote" type="label" fontSize="small" fontColor="darkgray">
+        <Label>Minimum update interval is 10 minutes.  Default is 60.</Label>
+    </Field>
 </PluginConfig>
