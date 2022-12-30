@@ -115,10 +115,9 @@ class MyRequestHandler(BaseHTTPRequestHandler):
                 return False
  
         elif auth_scheme == "digest":
-
-            h1 = hashlib.md5(self.server.httpUser + ":" + REALM + ":" + self.server.httpPassword).hexdigest()
-            h2 = hashlib.md5(self.command + ":" + auth_map["uri"]).hexdigest()
-            rs = h1 + ":" + auth_map["nonce"] + ":" + auth_map["nc"] + ":" + auth_map["cnonce"] + ":" + auth_map["qop"] + ":" + h2
+            h1 = hashlib.md5((self.server.httpUser + ":" + REALM + ":" + self.server.httpPassword).encode()).hexdigest()
+            h2 = hashlib.md5((self.command + ":" + auth_map["uri"]).encode()).hexdigest()
+            rs = (h1 + ":" + auth_map["nonce"] + ":" + auth_map["nc"] + ":" + auth_map["cnonce"] + ":" + auth_map["qop"] + ":" + h2).encode()
             if hashlib.md5(rs).hexdigest() == auth_map["response"]:
                 self.logger.debug(f"MyRequestHandler: {auth_scheme} Authorization valid".capitalize())
                 return True
