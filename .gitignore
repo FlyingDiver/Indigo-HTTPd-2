@@ -129,3 +129,7 @@ dmypy.json
 .pyre/
 /HTTPd2.indigoPlugin.zip
 /.DS_Store
+
+HTTPd2.indigoPlugin/.idea/
+
+.idea/
