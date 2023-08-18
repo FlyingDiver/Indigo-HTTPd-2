@@ -531,7 +531,7 @@ class Plugin(indigo.PluginBase):
         
         proxy_dev.updateStateOnServer(key='hookdata_json', value=hookdata_json)
 
-        for triggerId, trigger in sorted(self.triggers.iteritems()):
+        for triggerId, trigger in sorted(self.triggers.items()):
             self.logger.debug(f"Checking Trigger {trigger.name} ({trigger.id})")
             if trigger.pluginProps["proxyDevice"] == str(proxy_dev.id):
                 self.logger.debug(f"Executing Trigger {trigger.name} ({trigger.id})")
